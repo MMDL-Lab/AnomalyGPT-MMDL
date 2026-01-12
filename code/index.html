@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工业视觉智能平台 - 异常检测与图像生成</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --gray: #7f8c8d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--dark);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 20px 0;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo i {
+            font-size: 32px;
+            color: var(--secondary);
+        }
+
+        .logo h1 {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 25px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        nav a:hover,
+        nav a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--secondary);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            background: var(--secondary);
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-header i {
+            font-size: 24px;
+        }
+
+        .card-body {
+            padding: 25px;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--gray);
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .upload-area:hover {
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .upload-area i {
+            font-size: 48px;
+            color: var(--secondary);
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+        }
+
+        .btn-accent {
+            background: var(--accent);
+        }
+
+        .btn-accent:hover {
+            background: #c0392b;
+        }
+
+        .result-area {
+            margin-top: 25px;
+            text-align: center;
+        }
+
+        .image-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .image-box {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            aspect-ratio: 1 / 1;   /* 强制宽高相等 */
+            background: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray);
+        }
+
+        .image-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--secondary);
+            cursor: pointer;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--gray);
+            font-size: 14px;
+            margin-top: 40px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--secondary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            background: var(--success);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateX(100%);
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .notification.warning {
+            background: var(--warning);
+        }
+
+        /* 记录相关样式 */
+        .records-container {
+            margin-top: 30px;
+        }
+
+        .record-item {
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .record-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 5px;
+            object-fit: cover;
+        }
+
+        .record-details {
+            flex: 1;
+        }
+
+        .record-meta {
+            color: var(--gray);
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .pagination-btn {
+            padding: 5px 15px;
+            border: 1px solid var(--secondary);
+            background: white;
+            color: var(--secondary);
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .pagination-btn.active {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 帮助中心样式 */
+        .help-container {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .help-section {
+            margin-bottom: 40px;
+        }
+
+        .help-section h3 {
+            color: var(--secondary);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .help-item {
+            margin-bottom: 25px;
+        }
+
+        .help-item h4 {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .help-item h4 i {
+            color: var(--secondary);
+        }
+
+        .help-item p {
+            color: var(--gray);
+            line-height: 1.6;
+            margin-left: 30px;
+        }
+
+        /* 通用隐藏样式 */
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .image-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .gen-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media(max-width:900px) {
+            .gen-wrapper {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .flex-center {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            /* 左侧窄 1，右侧宽 2 */
+            gap: 30px;
+        }
+
+        @media(max-width:900px) {
+            .chat-wrapper {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        h3+.form-group {
+            margin-top: 10px;
+        }
+
+        h3+.upload-area {
+            margin-top: 10px;
+        }
+
+        .chat-area {
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #f8f9fa;
+            max-height: 400px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message.user {
+            align-items: flex-end;
+        }
+
+        .message.assistant {
+            align-items: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .message.user .message-bubble {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .message.assistant .message-bubble {
+            background: #f0f0f0;
+            color: var(--dark);
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .results {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        /* 弹窗样式 */
+        .modal {
+            display: flex;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 2% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .close-btn {
+            float: right;
+            font-size: 28px;
+            cursor: pointer;
+        }
+
+        .modal-images {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .modal-image-box {
+            border: 1px solid #eee;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .modal-image-box img {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+        }
+
+        .modal-chat-log {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .chat-content {
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+        }
+
+        /* 会话列表样式 */
+        .session-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .session-item {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+
+        .session-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .session-preview {
+            height: 150px;
+            overflow: hidden;
+        }
+
+        .session-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .session-info {
+            padding: 15px;
+        }
+
+        .session-info h3 {
+            margin-bottom: 5px;
+            color: var(--primary);
+        }
+
+        .session-info p {
+            color: var(--gray);
+            font-size: 14px;
+        }
+
+        .session-actions {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 15px 15px;
+        }
+
+        .no-sessions,
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: var(--gray);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 通知 -->
+    <div class="notification" id="notification">操作成功！</div>
+
+    <!-- 顶部导航 -->
+    <header>
+        <div class="container header-content">
+            <div class="logo">
+                <i class="fas fa-industry"></i>
+                <h1>工业异常检测垂直领域大模型平台</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#" class="active" data-target="image-generation">图像生成</a></li>
+                    <li><a href="#" data-target="model-chat">模型对话</a></li>
+                    <li><a href="#" data-target="generation-records">生成记录</a></li>
+                    <li><a href="#" data-target="chat-history">会话历史</a></li>
+                    <li><a href="#" data-target="help-center">帮助中心</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- 1. 图像生成（原首页） -->
+        <div id="image-generation-content">
+            <!-- 外层网格：≥900px 左右，<900px 上下 -->
+            <div class="gen-wrapper">
+                <!-- 左侧：配置参数 -->
+                <div class="card gen-left">
+                    <div class="card-header">
+                        <i class="fas fa-cogs"></i>
+                        <h2>配置参数</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="modelType">模型类型</label>
+                                <select id="modelType">
+                                    <option value="cnn">扩散模型 (Diffusion)</option>
+                                    <option value="gan">生成对抗网络 (GAN)</option>
+                                    <option value="">多模态可控异常生成模块</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="imageType">生成图像类型</label>
+                                <select id="imageType">
+                                    <option value="mechanical">机械零件</option>
+                                    <option value="electronic">电子元件</option>
+                                    <option value="medicine">医疗药品</option>
+                                    <option value="textile">纺织品</option>
+                                    <option value="metal">金属表面</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="complexity">图像复杂度</label>
+                                <div class="slider-container">
+                                    <input type="range" min="1" max="10" value="5" class="slider" id="complexity">
+                                    <span id="complexityValue">5</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn" id="generateBtn" style="display:block; margin:20px auto 0;">
+                            <i class="fas fa-magic"></i>立即生成
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 右侧：生成结果 -->
+                <div class="card gen-right">
+                    <div class="card-header">
+                        <i class="fas fa-image"></i>
+                        <h2>生成结果</h2>
+                    </div>
+                    <div class="card-body flex-center">
+                        <div class="loading" id="generationLoading">
+                            <div class="loading-spinner"></div>
+                            <p>图像生成中，请稍候...</p>
+                        </div>
+                        <!-- 居中容器：让图片框和按钮上下排布 -->
+                        <div style="display:flex;flex-direction:column;align-items:center;gap:20px;">
+                            <!-- 图片框：定宽正方形 + margin 水平居中 -->
+                            <div class="image-box" id="generatedImage" style="width:250px;height:250px;margin:0 auto;">
+                                <span>生成图像将显示在这里</span>
+                            </div>
+
+                            <button class="btn btn-accent" id="saveGeneratedBtn">
+                                <i class="fas fa-download"></i>保存图像
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 模型对话 -->
+        <div id="model-chat-content" class="hidden">
+            <!-- 外层网格 -->
+            <div class="chat-wrapper">
+                <!-- 左侧：控制面板 -->
+                <div class="card chat-left">
+                    <div class="card-header">
+                        <i class="fas fa-cog"></i>
+                        <h2>控制面板</h2>
+                    </div>
+                    <div class="card-body">
+                        <h3>图像上传</h3>
+                        <div class="upload-area" id="imageUpload">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>点击或拖拽上传检测图像</p>
+                            <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                        </div>
+
+                        <div class="upload-area" id="normalUpload">
+                            <i class="fas fa-image"></i>
+                            <p>点击或拖拽上传正常图像（可选）</p>
+                            <input type="file" id="normalInput" accept="image/*" style="display: none;">
+                        </div>
+                        <div class="form-group" style="margin-top: 10px;">
+                            <label>正常图像状态：</label>
+                            <span id="normalImageStatus" style="color: var(--gray);">未上传</span>
+                        </div>
+
+                        <h3>模型参数</h3>
+                        <div class="form-group">
+                            <label>最大长度</label>
+                            <div class="slider-container">
+                                <input type="range" min="128" max="512" value="512" class="slider" id="maxLength">
+                                <span id="maxLengthValue">512</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Top P</label>
+                            <div class="slider-container">
+                                <input type="range" min="0" max="1" step="0.01" value="0.01" class="slider" id="topP">
+                                <span id="topPValue">0.01</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>温度</label>
+                            <div class="slider-container">
+                                <input type="range" min="0" max="1" step="0.01" value="1" class="slider"
+                                    id="temperature">
+                                <span id="temperatureValue">1.0</span>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-accent" onclick="resetSession()"
+                            style="display:block; margin:20px auto 0;">
+                            <i class="fas fa-refresh"></i> 重置会话
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 右侧：对话与结果（占剩余空间） -->
+                <div class="card chat-right">
+                    <div class="card-header">
+                        <i class="fas fa-comments"></i>
+                        <h2>大模型对话</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="chat-area">
+                            <div class="chat-messages" id="chatMessages"></div>
+                            <div class="chat-input">
+                                <input type="text" id="messageInput" placeholder="描述异常或询问问题..."
+                                    onkeypress="handleKeyPress(event)">
+                                <button class="btn" onclick="sendMessage()">
+                                    <i class="fas fa-paper-plane"></i> 发送
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="loading" id="loading">
+                            <div class="loading-spinner"></div>
+                            <p>AI分析中，请稍候...</p>
+                        </div>
+                        <div class="results">
+                            <div class="image-box" id="originalImage">
+                                <span>原始图像</span>
+                            </div>
+                            <div class="image-box" id="heatmapImage">
+                                <span>彩色热力图</span>
+                            </div>
+                            <div class="image-box" id="maskImage">
+                                <span>二值掩码</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 会话历史 -->
+        <div id="chat-history-content" class="hidden">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-history"></i>
+                    <h2>会话历史</h2>
+                </div>
+                <div class="card-body">
+                    <div id="sessionList" class="session-list">
+                        <div class="loading" id="sessionLoading">
+                            <div class="loading-spinner"></div>
+                            <p>加载会话历史中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. 生成记录 -->
+        <div id="generation-records-content" class="hidden">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-history"></i>
+                    <h2>图像生成记录</h2>
+                </div>
+                <div class="card-body">
+                    <div id="recordsList">
+                        <p>加载中...</p>
+                    </div>
+                    <div class="pagination">
+                        <button class="pagination-btn" id="prevPage" disabled>上一页</button>
+                        <button class="pagination-btn active" id="page1">1</button>
+                        <button class="pagination-btn" id="nextPage">下一页</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. 帮助中心 -->
+        <div id="help-center-content" class="hidden">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-question-circle"></i>
+                    <h2>帮助中心</h2>
+                </div>
+                <div class="card-body" style="line-height:1.7;">
+                    <div class="help-section">
+                        <h3>工业异常检测</h3>
+                        <div class="help-item">
+                            <h4><i class="fas fa-info-circle"></i>什么是工业异常检测？</h4>
+                            <p>工业异常检测是一种通过AI技术自动识别工业产品表面缺陷、结构异常的技术。系统会分析上传的图像，生成热力图标记出可能存在异常的区域。</p>
+                        </div>
+                        <div class="help-item">
+                            <h4><i class="fas fa-upload"></i>如何上传图像进行检测？</h4>
+                            <p>您可以点击检测区域的上传区域，或直接拖拽图像到上传区域。系统支持常见的图像格式如JPG、PNG等，建议文件大小不超过5MB。</p>
+                        </div>
+                        <div class="help-item">
+                            <h4><i class="fas fa-chart-line"></i>如何解读检测结果？</h4>
+                            <p>检测完成后，系统会显示原始图像和热力图。热力图中颜色较深的区域表示该位置存在异常的可能性较高，颜色越深代表置信度越高。</p>
+                        </div>
+                    </div>
+
+                    <div class="help-section">
+                        <h3>工业图像合成</h3>
+                        <div class="help-item">
+                            <h4><i class="fas fa-magic"></i>图像生成功能有什么用？</h4>
+                            <p>图像生成功能可以根据您选择的参数生成各种工业场景的图像，可用于模型训练、数据增强或测试系统性能。生成的图像基于MVTec AD工业缺陷数据集。</p>
+                        </div>
+                        <div class="help-item">
+                            <h4><i class="fas fa-sliders-h"></i>如何选择生成参数？</h4>
+                            <p>模型类型：GAN，DIFFUSION，多模态可控异常生成模块。<br>
+                                图像类型：对应不同工业场景（机械零件、电子元件等）。<br>
+                                复杂度：值越高，生成的图像可能包含更多细节或异常特征。</p>
+                        </div>
+                    </div>
+
+                    <div class="help-section">
+                        <h3>记录管理</h3>
+                        <div class="help-item">
+                            <h4><i class="fas fa-history"></i>如何查看历史记录？</h4>
+                            <p>点击导航栏中的"会话历史"或"生成记录"可以查看相应的历史操作记录，包括图像预览和详细参数。记录会保存在浏览器本地存储中。</p>
+                        </div>
+                        <div class="help-item">
+                            <h4><i class="fas fa-download"></i>如何保存结果？</h4>
+                            <p>在每个结果区域都有"保存结果"按钮，点击即可将图像保存到本地。在记录列表中，每个记录项也有下载按钮可供使用。</p>
+                        </div>
+                    </div>
+
+                    <div class="help-section">
+                        <h3>常见问题</h3>
+                        <div class="help-item">
+                            <h4><i class="fas fa-exclamation-triangle"></i>上传图像失败怎么办？</h4>
+                            <p>请检查图像格式是否正确（支持JPG、PNG），文件大小是否过大（建议小于5MB）。如果问题持续，请刷新页面重试或检查网络连接。</p>
+                        </div>
+                        <div class="help-item">
+                            <h4><i class="fas fa-clock"></i>处理时间过长怎么办？</h4>
+                            <p>图像处理时间取决于图像复杂度和服务器负载，通常在几秒内完成。如果长时间无响应（超过30秒），请刷新页面重试。</p>
+                        </div>
+                        <div class="help-item">
+                            <h4><i class="fas fa-database"></i>数据集支持哪些类型？</h4>
+                            <p>系统基于MVTec AD数据集，支持金属零件、电子元件、纺织品等多个类别的工业图像，具体包括：metal_nut、screw、cable、transistor等。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 会话详情弹窗 -->
+    <div id="sessionModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h2>会话详情 - <span id="modalSessionTime"></span></h2>
+
+            <div class="modal-images">
+                <div class="modal-image-box">
+                    <h3>原始图像</h3>
+                    <img id="modalOriginalImage" src="" alt="原始图像" style="width: 100%; height: auto;">
+                </div>
+                <div class="modal-image-box">
+                    <h3>彩色热力图</h3>
+                    <img id="modalHeatmapImage" src="" alt="彩色热力图" style="width: 100%; height: auto;">
+                </div>
+                <div class="modal-image-box">
+                    <h3>二值掩码</h3>
+                    <img id="modalMaskImage" src="" alt="二值掩码" style="width: 100%; height: auto;">
+                </div>
+            </div>
+
+            <div class="modal-chat-log">
+                <h3><i class="fas fa-comments"></i> 对话记录</h3>
+                <div id="modalChatContent" class="chat-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>基于深度学习技术的工业异常检测与图像生成系统</p>
+        </div>
+    </footer>
+
+    <!-- 脚本 -->
+    <script>
+        // 全局变量
+        let currentImageId = null;
+        let currentNormalId = null;
+        let sessionId = 'default_' + Date.now();
+
+        // DOM元素
+        const imageUpload = document.getElementById('imageUpload');
+        const normalUpload = document.getElementById('normalUpload');
+        const imageInput = document.getElementById('imageInput');
+        const normalInput = document.getElementById('normalInput');
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const loading = document.getElementById('loading');
+        const generateBtn = document.getElementById('generateBtn');
+        const saveGeneratedBtn = document.getElementById('saveGeneratedBtn');
+        const complexitySlider = document.getElementById('complexity');
+        const complexityValue = document.getElementById('complexityValue');
+        const notification = document.getElementById('notification');
+
+        // 滑块值更新
+        document.getElementById('maxLength').addEventListener('input', (e) => {
+            document.getElementById('maxLengthValue').textContent = e.target.value;
+        });
+        document.getElementById('topP').addEventListener('input', (e) => {
+            document.getElementById('topPValue').textContent = e.target.value;
+        });
+        document.getElementById('temperature').addEventListener('input', (e) => {
+            document.getElementById('temperatureValue').textContent = e.target.value;
+        });
+
+        // 文件上传处理
+        setupUploadArea(imageUpload, imageInput, true);
+        setupUploadArea(normalUpload, normalInput, false);
+
+        function setupUploadArea(uploadArea, fileInput, isMain) {
+            uploadArea.addEventListener('click', () => fileInput.click());
+
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.background = 'rgba(52, 152, 219, 0.1)';
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.background = '';
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.background = '';
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileUpload(files[0], isMain);
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFileUpload(e.target.files[0], isMain);
+                }
+            });
+        }
+
+        async function handleFileUpload(file, isMain) {
+            if (!file.type.startsWith('image/')) {
+                showNotification('请上传图像文件', true);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    if (isMain) {
+                        currentImageId = result.file_id;
+                        const originalImage = document.getElementById('originalImage');
+                        originalImage.innerHTML = `<img src="${result.file_path}" alt="原始图像" style="width: 100%; height: 100%; object-fit: cover;">`;
+                    } else {
+                        currentNormalId = result.file_id;
+                        document.getElementById('normalImageStatus').textContent = '已上传';
+                        document.getElementById('normalImageStatus').style.color = 'var(--success)';
+                        showNotification('正常图像上传成功');
+                    }
+                } else {
+                    showNotification('上传失败: ' + result.error, true);
+                }
+            } catch (error) {
+                showNotification('网络错误，请重试', true);
+            }
+        }
+
+        // 发送消息
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) {
+                showNotification('请输入消息', true);
+                return;
+            }
+
+            if (!currentImageId) {
+                showNotification('请先上传异常图像', true);
+                return;
+            }
+
+            addMessage(message, 'user');
+            messageInput.value = '';
+            showLoading(true);
+
+            const formData = new FormData();
+            formData.append('query', message);
+            formData.append('image_id', currentImageId);
+            if (currentNormalId) {
+                formData.append('normal_image_id', currentNormalId);
+            }
+            formData.append('session_id', sessionId);
+            formData.append('max_length', document.getElementById('maxLength').value);
+            formData.append('top_p', document.getElementById('topP').value);
+            formData.append('temperature', document.getElementById('temperature').value);
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    addMessage(result.response, 'assistant');
+                    document.getElementById('heatmapImage').innerHTML =
+                        `<img src="${result.heatmap_image}" alt="彩色热力图" style="width: 100%; height: 100%; object-fit: cover;">`;
+                    if (result.mask_image) {
+                        document.getElementById('maskImage').innerHTML =
+                            `<img src="${result.mask_image}" alt="二值掩码" style="width: 100%; height: 100%; object-fit: cover;">`;
+                    }
+                }
+
+                else {
+                    showNotification('分析失败: ' + result.error, true);
+                }
+            } catch (error) {
+                showNotification('网络错误，请重试', true);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 继续对话
+        async function continueChat(message) {
+            addMessage(message, 'user');
+            showLoading(true);
+
+            const formData = new FormData();
+            formData.append('query', message);
+            formData.append('session_id', sessionId);
+            formData.append('max_length', document.getElementById('maxLength').value);
+            formData.append('top_p', document.getElementById('topP').value);
+            formData.append('temperature', document.getElementById('temperature').value);
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    addMessage(result.response, 'assistant');
+                } else {
+                    showNotification('对话失败: ' + result.error, true);
+                }
+            } catch (error) {
+                showNotification('网络错误，请重试', true);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 重置会话
+        async function resetSession() {
+            // 1. 收集数据
+            // 获取相对路径
+            const extractPath = (url) => url.replace(/^.*\/static\//, '');
+            const originalImg = extractPath(document.querySelector('#originalImage img')?.src || '');
+            const heatmapImg = extractPath(document.querySelector('#heatmapImage img')?.src || '');
+            const maskImg = extractPath(document.querySelector('#maskImage img')?.src || '');
+            const chatLog = Array.from(chatMessages.querySelectorAll('.message'))
+                .map(m => m.textContent.trim())
+                .join('\n\n');
+
+            // 2. 调用后端归档
+            if (originalImg && heatmapImg && maskImg) {
+                const formData = new FormData();
+                formData.append('original_path', originalImg);
+                formData.append('heatmap_path', heatmapImg);
+                formData.append('mask_path', maskImg);
+                formData.append('chat_log', chatLog);
+
+                try {
+                    const res = await fetch('/api/save-session', { method: 'POST', body: formData });
+                    const data = await res.json();
+                    if (data.success) {
+                        showNotification(`会话已保存到会话历史`);
+                    } else {
+                        showNotification('保存失败：' + data.detail, true);
+                    }
+                } catch (e) {
+                    showNotification('网络错误，无法保存', true);
+                }
+            }
+
+            // 3. 真正清空会话
+            const resetForm = new FormData();
+            resetForm.append('session_id', sessionId);
+            try {
+                await fetch('/api/reset', { method: 'POST', body: resetForm });
+            } catch (e) {/* ignore */ }
+
+            // 5. 重置上传的图像
+            currentImageId = null;
+            currentNormalId = null;
+            document.getElementById('originalImage').innerHTML = '<span>原始图像</span>';
+            document.getElementById('heatmapImage').innerHTML = '<span>彩色热力图</span>';
+            document.getElementById('maskImage').innerHTML = '<span>二值掩码</span>';
+            document.getElementById('imageInput').value = '';
+            document.getElementById('normalInput').value = '';
+            chatMessages.innerHTML = '';
+            document.getElementById('normalImageStatus').textContent = '未上传';
+            document.getElementById('normalImageStatus').style.color = 'var(--gray)';
+        }
+
+        // 添加消息到聊天窗口
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = text;
+
+            messageDiv.appendChild(bubble);
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // 显示/隐藏加载动画
+        function showLoading(show) {
+            if (show) {
+                loading.classList.add('show');
+            } else {
+                loading.classList.remove('show');
+            }
+        }
+
+        // 显示通知
+        function showNotification(message, isError = false) {
+            notification.textContent = message;
+            notification.className = isError ? 'notification error show' : 'notification show';
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // 处理回车键
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        /* ===== 导航切换 ===== */
+        const navLinks = document.querySelectorAll('nav a');
+        const pages = {
+            'image-generation': document.getElementById('image-generation-content'),
+            'model-chat': document.getElementById('model-chat-content'),
+            'chat-history': document.getElementById('chat-history-content'),
+            'generation-records': document.getElementById('generation-records-content'),
+            'help-center': document.getElementById('help-center-content')
+        };
+
+        function switchPage(targetId) {
+            // 高亮
+            navLinks.forEach(a => a.classList.remove('active'));
+            document.querySelector(`nav a[data-target="${targetId}"]`).classList.add('active');
+            // 显示
+            Object.values(pages).forEach(p => p.classList.add('hidden'));
+            pages[targetId].classList.remove('hidden');
+
+            if (targetId === 'generation-records') loadRecords();
+            if (targetId === 'chat-history') loadSessions(); // 切换到历史页时自动加载
+        }
+        navLinks.forEach(link => {
+            link.addEventListener('click', e => {
+                e.preventDefault();
+                switchPage(link.dataset.target);
+            });
+        });
+
+        // 复杂度滑块
+        complexitySlider.addEventListener('input', () => {
+            complexityValue.textContent = complexitySlider.value;
+        });
+
+        // 图像生成按钮
+        generateBtn.addEventListener('click', () => {
+            // 获取参数
+            const modelType = document.getElementById('modelType').value;
+            const imageType = document.getElementById('imageType').value;
+            const complexity = parseInt(document.getElementById('complexity').value);
+
+            // 显示加载动画
+            generationLoading.style.display = 'block';
+
+            // 发送请求到后端
+            fetch('http://localhost:5000/generate_image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model_type: modelType,
+                    image_type: imageType,
+                    complexity: complexity
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // 隐藏加载动画
+                    generationLoading.style.display = 'none';
+
+                    if (data.image_data) {
+                        // 显示生成的图像
+                        document.getElementById('generatedImage').innerHTML =
+                            `<img src="${data.image_data}" alt="生成图像">`;
+
+                        showNotification('图像生成完成！');
+                    } else {
+                        showNotification('生成失败: ' + (data.error || '未知错误'), 'warning');
+                    }
+                })
+                .catch(error => {
+                    generationLoading.style.display = 'none';
+                    console.error('Error:', error);
+                    showNotification('生成过程中发生错误', 'warning');
+                });
+        });
+
+        // 保存按钮
+
+        saveGeneratedBtn.addEventListener('click', () => {
+            showNotification('生成图像已保存到本地');
+        });
+
+        // 加载生成记录
+        function loadRecords() {
+            fetch('http://localhost:5000/get_records')
+                .then(response => response.json())
+                .then(data => {
+                    const recordsList = document.getElementById('recordsList');
+
+                    if (data.records && data.records.length > 0) {
+                        recordsList.innerHTML = '';
+                        data.records.forEach(record => {
+                            const recordItem = document.createElement('div');
+                            recordItem.className = 'record-item';
+                            recordItem.innerHTML = `
+                                <img src="${record.image_data}" class="record-image" alt="生成图像">
+                                <div class="record-details">
+                                    <h4>ID: ${record.id} - ${record.category}</h4>
+                                    <div class="record-meta">
+                                        <p>时间: ${record.timestamp}</p>
+                                        <p>模型: ${record.model_type.toUpperCase()} | 类型: ${record.image_type} | 复杂度: ${record.complexity}</p>
+                                        <p>${record.is_normal ? '正常图像' : '异常图像'}</p>
+                                    </div>
+                                </div>
+                                <button class="btn" onclick="saveRecordImage('${record.image_data}', ${record.id})">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            `;
+                            recordsList.appendChild(recordItem);
+                        });
+                    } else {
+                        recordsList.innerHTML = '<p>暂无生成记录</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading records:', error);
+                    document.getElementById('recordsList').innerHTML = '<p>加载记录失败</p>';
+                });
+        }
+
+        // 保存记录图像
+        function saveRecordImage(imageData, recordId) {
+            const link = document.createElement('a');
+            link.href = imageData;
+            link.download = `generated_image_${recordId}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showNotification('图像已保存');
+        }
+
+        // === 会话历史功能 ===
+        async function loadSessions() {
+            const sessionList = document.getElementById('sessionList');
+            sessionList.innerHTML = `
+        <div class="loading" id="sessionLoading">
+            <div class="loading-spinner"></div>
+            <p>加载会话历史中...</p>
+        </div>
+    `;
+
+            try {
+                const response = await fetch('/api/get-sessions');
+                const data = await response.json();
+
+                if (data.success && data.sessions.length > 0) {
+                    let html = '';
+                    data.sessions.forEach(session => {
+                        // 从session_id中提取时间信息
+                        const sessionIdParts = session.id.split('_');
+                        const timestamp = sessionIdParts[0] + sessionIdParts[1]; // 格式: YYYYMMDDHHmmss
+
+                        // 格式化时间显示
+                        const formattedTime = formatSessionTimeWithSeconds(timestamp);
+
+                        html += `
+                    <div class="session-item">
+                        <div class="session-info">
+                            <h3>${formattedTime}</h3>
+                            <p>会话ID: ${session.id}</p>
+                        </div>
+                        <div class="session-actions">
+                            <button class="btn" onclick="openSessionModal('${session.id}')">
+                                <i class="fas fa-eye"></i> 查看
+                            </button>
+                            <button class="btn btn-accent" onclick="deleteSession('${session.id}')">
+                                <i class="fas fa-trash"></i> 删除
+                            </button>
+                        </div>
+                    </div>`;
+                    });
+                    sessionList.innerHTML = html;
+                } else {
+                    sessionList.innerHTML = '<p class="no-sessions">暂无会话历史记录</p>';
+                }
+            } catch (error) {
+                console.error('加载会话历史失败:', error);
+                sessionList.innerHTML = '<p class="error">加载失败，请刷新重试</p>';
+                showNotification('加载会话历史失败', true);
+            }
+        }
+
+        // 时间格式化函数（精确到秒）
+        function formatSessionTimeWithSeconds(timestamp) {
+            // 格式: YYYYMMDDHHmmss
+            const year = timestamp.slice(0, 4);
+            const month = timestamp.slice(4, 6);
+            const day = timestamp.slice(6, 8);
+            const hour = timestamp.slice(8, 10);
+            const minute = timestamp.slice(10, 12);
+            const second = timestamp.slice(12, 14);
+
+            return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+        }
+
+        // 打开会话详情弹窗
+        async function openSessionModal(sessionId) {
+            const modal = document.getElementById('sessionModal');
+            modal.classList.remove('hidden');
+
+            // 显示加载状态
+            document.getElementById('modalSessionTime').textContent = '加载中...';
+            document.getElementById('modalOriginalImage').src = '';
+            document.getElementById('modalHeatmapImage').src = '';
+            document.getElementById('modalMaskImage').src = '';
+            document.getElementById('modalChatContent').innerHTML = '<p>加载中...</p>';
+
+            try {
+                const response = await fetch(`/api/get-session-detail/${sessionId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const session = data.data;
+                    const sessionIdParts = session.id.split('_');
+                    const timestamp = sessionIdParts[0] + sessionIdParts[1]; // 格式: YYYYMMDDHHmmss
+                    document.getElementById('modalSessionTime').textContent = formatSessionTimeWithSeconds(timestamp);
+                    document.getElementById('modalOriginalImage').src = session.original_image;
+                    document.getElementById('modalHeatmapImage').src = session.heatmap_image;
+                    document.getElementById('modalMaskImage').src = session.mask_image;
+
+                    // 格式化对话日志
+                    const formattedChat = session.chat_log.replace(/\n/g, '<br>');
+                    document.getElementById('modalChatContent').innerHTML = formattedChat;
+                } else {
+                    showNotification('加载失败: ' + data.error, true);
+                    //closeModal();
+                }
+            } catch (error) {
+                showNotification('网络错误', true);
+                //closeModal();
+            }
+        }
+
+        // 删除会话
+        async function deleteSession(sessionId) {
+            if (!confirm('确定删除此会话记录吗？操作不可撤销！')) return;
+
+            try {
+                const response = await fetch(`/api/delete-session/${sessionId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification('会话已删除');
+                    loadSessions(); // 刷新列表
+                } else {
+                    showNotification('删除失败: ' + data.error, true);
+                }
+            } catch (error) {
+                showNotification('网络错误，删除失败', true);
+            }
+        }
+
+        // 关闭弹窗
+        function closeModal() {
+            document.getElementById('sessionModal').classList.add('hidden');
+        }
+
+        // 点击弹窗外部关闭
+        window.addEventListener('click', (event) => {
+            if (event.target === document.getElementById('sessionModal')) {
+                closeModal();
+            }
+        });
+
+        /* 默认进入图像生成页 */
+        switchPage('image-generation');
+    </script>
+</body>
+
+</html>
